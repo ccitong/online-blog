@@ -1,3 +1,18 @@
+/*********************************************************************************
+*  WEB322 – Assignment 02
+*  I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  No part *  of this assignment has been copied manually or electronically from any other source 
+*  (including 3rd party web sites) or distributed to other students.
+* 
+*  Name: __Sitong Wang____________________ Student ID: _138148200 Date: __5th Feb 2022______________
+*
+*  Online (Heroku) URL: https://git.heroku.com/evening-reaches-43658.git
+*
+*  GitHub Repository URL: https://github.com/ccitong/web322-app
+*
+********************************************************************************/ 
+
+
+
 var express = require("express");
 var app = express();
 var path = require("path");
@@ -15,7 +30,6 @@ app.use(express.static("public"));
 
 // setup a 'route' to listen on the default url path (http://localhost)
 app.get("/", function(req,res){
-    //res.send("Hello World<br /><a href='/about'>Go to the about page</a>");
     res.redirect('http://localhost:8080/about');
 });
 
@@ -56,8 +70,8 @@ app.get("/categories", function(req,res){
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname,"/public/css/000-404.png"));
 });
-// setup http server to listen on HTTP_PORT
 
+// setup http server to listen on HTTP_PORT
 blogservice.initialize().then(()=>{
   app.listen(HTTP_PORT, onHttpStart);
 }).catch(err=>{

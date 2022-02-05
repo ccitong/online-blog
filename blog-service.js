@@ -26,7 +26,6 @@ module.exports.initialize = function(){
 
 
 // Get all posts
-
 module.exports.getAllPosts = function(){
     return new Promise((resolve, reject)=>{
         if(posts.length == 0){
@@ -41,9 +40,6 @@ module.exports.getAllPosts = function(){
  
   //Get all published posts
   module.exports.getPublishedPosts = function(){
-    // publishedPosts = posts.filter(function(posts){
-    //   return posts.published == true
-    // });
     for(let i=0;i<posts.length;i++){
       if(posts[i].published == true){
         publishedPosts.push(posts[i]);
