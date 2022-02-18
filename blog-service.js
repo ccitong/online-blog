@@ -2,6 +2,7 @@
 let posts =[]
 let categories =[]
 let publishedPosts =[]
+//let postadd = []
 var fs = require ("fs");
 
 
@@ -67,3 +68,56 @@ module.exports.getCategories = function(){
       }
   });
 }
+
+
+module.exports.addPost = function(postData){
+  postData.published == undefined ? postData.published = false : postData.published = true;
+  postData.id = postData.length + 1;
+  posts.push(postData);
+  return new Promise((resolve,reject)=>{
+      if(posts.length == 0){
+        reject ("No posts added")
+      }else{
+        resolve(posts);
+      }
+  });
+}
+
+//add function of getPostByCategory
+module.exports.getPostsByCategory = (category)=>{
+  return new Promise((resolve, reject)=>{
+    var post_category= posts.filter(posts=> posts.category == category);
+      if(post_category.length == 0){
+        reject("No result returned");
+      }
+      else{
+        resolve(post_category);
+      }
+  })
+};
+
+//add function of getPostByminDate
+module.exports.getPostsByMinDate = (minDatestr)=>{
+  return new Promise((resolve, reject)=>{
+    var post_date= posts.filter(posts=> posts.postDate >= minDatestr);
+      if(post_date.length == 0){
+        reject("No result returned");
+      }
+      else{
+        resolve(post_date);
+      }
+  })
+};
+
+//add function of getPostByCategory
+module.exports.getPostsById = (id)=>{
+  return new Promise((resolve, reject)=>{
+    var post_id= posts.filter(posts=> posts.id == id);
+      if(post_id.length == 0){
+        reject("No result returned");
+      }
+      else{
+        resolve(post_id);
+      }
+  })
+};
