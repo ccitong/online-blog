@@ -1,8 +1,6 @@
 //define global array
 let posts =[]
 let categories =[]
-let publishedPosts =[]
-//let postadd = []
 var fs = require ("fs");
 
 
@@ -41,6 +39,7 @@ module.exports.getAllPosts = function(){
  
   //Get all published posts
   module.exports.getPublishedPosts = function(){
+    let publishedPosts =[];
     for(let i=0;i<posts.length;i++){
       if(posts[i].published == true){
         publishedPosts.push(posts[i]);
