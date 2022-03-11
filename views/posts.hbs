@@ -2,17 +2,10 @@
     <div class="col-md-12">
           <h2>Posts</h2>
           <hr />
-          {{#each posts}}
+          {{#each data}}
            <tr>
-            <td>{{this.title}}</td>
-            
-            </tr>
-            {{else}}
-            <tr>
-            <td colspan="4">No Data Available</td>
-          </tr>
-
-
+            <td>{{data.title}}</td>
+           </tr> 
           {{/each}}
     </div>
 </div>
