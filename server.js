@@ -21,6 +21,30 @@ var blogservice = require("./blog-service.js");
 const multer = require("multer");
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
+const exphbs = require("express-handlebars"); 
+const { setEnvironmentData } = require("worker_threads");
+app.engine('.hbs', exphbs.engine({ 
+  extname: '.hbs',
+  layout: 'main',
+  helpers:{
+    navLink: function(url, options){
+      return '<li' + 
+          ((url == app.locals.activeRoute) ? ' class="active" ' : '') + 
+          '><a href="' + url + '">' + options.fn(this) + '</a></li>';
+    },
+    equal: function (lvalue, rvalue, options) {
+      if (arguments.length < 3)
+          throw new Error("Handlebars Helper equal needs 2 parameters");
+      if (lvalue != rvalue) {
+          return options.inverse(this);
+      } else {
+          return options.fn(this);
+      }
+    }
+  }
+}));
+app.set('view engine', '.hbs');
+
 
 cloudinary.config({
   cloud_name: 'dszvbrlkg',
@@ -39,6 +63,14 @@ function onHttpStart() {
 
 
 app.use(express.static("public"));
+app.use(function(req,res,next){
+  let route = req.path.substring(1);
+  app.locals.activeRoute = (route == "/") ? "/" : "/" + route.replace(/\/(.*)/, "");
+  app.locals.viewingCategory = req.query.category;
+  next();
+});
+
+
 
 // setup a 'route' to listen on the default url path (http://localhost)
 app.get("/", function(req,res){
@@ -47,11 +79,16 @@ app.get("/", function(req,res){
 
 // setup another route to listen on /about
 app.get("/about", function(req,res){
-  res.sendFile(path.join(__dirname,"/views/about.html"));
+  res.render('about',{
+    layout:'main'
+  });
 });
 
 app.get("/posts/add", function(req,res){
-  res.sendFile(path.join(__dirname,"/views/addPost.html"));
+  //res.sendFile(path.join(__dirname,"/views/addPost.html"));
+  res.render('addPost',{
+    layout: 'main'
+  });
 });
 
 app.get("/blog", function(req,res){
@@ -67,26 +104,25 @@ app.get("/blog", function(req,res){
 app.get("/posts", (req,res)=>{
   if(req.query.category){
       blogservice.getPostsByCategory(req.query.category).then((data) => {
-        res.json({data});
+        res.render("posts", {posts: data});
     }).catch((error) => {
-        console.log(error)
-        res.status(404).sendFile(path.join(__dirname,"/public/css/000-404.png"));
+        res.render("posts", {message: "no results"});
     })    
   }
   else if(req.query.minDate){
       blogservice.getPostsByMinDate(req.query.minDate).then((data) => {
-        res.json({data});
+        res.render("posts", {posts: data})
     }).catch((error) => {
-        console.log(error)
-        res.status(404).sendFile(path.join(__dirname,"/public/css/000-404.png"));
-    });
+        res.render("posts", {message: "no results"});
+    })
   }
   else{
     blogservice.getAllPosts().then((blogservice) => {
-      res.json(blogservice);
+      //res.json(blogservice);
+      res.render("posts", {posts: data})
     })
     .catch((err)=>{
-      console.log(err);
+      res.render("posts", {message: "no results"});
     })
 }
 });
