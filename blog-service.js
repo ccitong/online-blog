@@ -71,7 +71,10 @@ module.exports.getCategories = function(){
 
 module.exports.addPost = function(postData){
   postData.published == undefined ? postData.published = false : postData.published = true;
-  postData.id = postData.length + 1;
+  postData.id = posts.length + 1;
+  var today = new Date();
+  var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+  postData.postDate = date;
   posts.push(postData);
   return new Promise((resolve,reject)=>{
       if(posts.length == 0){
@@ -81,6 +84,24 @@ module.exports.addPost = function(postData){
       }
   });
 }
+
+module.exports.getPublishedPostsByCategory = function(category){
+  let PublishedPostsByCategory =[];
+  for(let i=0;i<posts.length;i++){
+    if(posts[i].published == true && posts[i].category == category){
+      PublishedPostsByCategory.push(posts[i]);
+    }
+  }
+  return new Promise((resolve, reject)=>{
+      if(PublishedPostsByCategory.length == 0){
+        reject("No result returned");
+      }
+      else{
+        resolve(PublishedPostsByCategory);
+      }
+  });
+}
+
 
 //add function of getPostByCategory
 module.exports.getPostsByCategory = (category)=>{
@@ -98,7 +119,7 @@ module.exports.getPostsByCategory = (category)=>{
 //add function of getPostByminDate
 module.exports.getPostsByMinDate = (minDatestr)=>{
   return new Promise((resolve, reject)=>{
-    var post_date= posts.filter(posts=> posts.postDate >= minDatestr);
+    var post_date= posts.filter(posts=> newDate(posts.postDate) >= newDate(minDatestr));
       if(post_date.length == 0){
         reject("No result returned");
       }
@@ -108,10 +129,10 @@ module.exports.getPostsByMinDate = (minDatestr)=>{
   })
 };
 
-//add function of getPostByCategory
-module.exports.getPostsById = (id)=>{
+//add function of getPostByID
+module.exports.getPostById = (id)=>{
   return new Promise((resolve, reject)=>{
-    var post_id= posts.filter(posts=> posts.id == id);
+    var post_id = posts.filter(posts=> posts.id == id);
       if(post_id.length == 0){
         reject("No result returned");
       }
