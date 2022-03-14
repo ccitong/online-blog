@@ -132,7 +132,7 @@ module.exports.getPostsByMinDate = (minDatestr)=>{
 //add function of getPostByID
 module.exports.getPostById = (id)=>{
   return new Promise((resolve, reject)=>{
-    var post_id = posts.filter(posts=> posts.id == id);
+    var post_id = posts.find(posts=> posts.id == id);
       if(post_id.length == 0){
         reject("No result returned");
       }
