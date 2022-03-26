@@ -3,10 +3,10 @@
 *  I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  No part *  of this assignment has been copied manually or electronically from any other source 
 *  (including 3rd party web sites) or distributed to other students.
 * 
-*  Name: __Sitong Wang____________________ Student ID: _138148200 Date: __14th March 2022______________
+*  Name: __Sitong Wang____________________ Student ID: _138148200 Date: __26th March 2022______________
 *
 *  Online (Heroku) URL: 
-                        https://peaceful-everglades-38937.herokuapp.com/
+                        
 *
 *  GitHub Repository URL: https://github.com/ccitong/web322-app
 *
@@ -42,6 +42,12 @@ app.engine('.hbs', exphbs.engine({
           return options.fn(this);
       }
     },
+    formatDate: function(dateObj){
+      let year = dateObj.getFullYear();
+      let month = (dateObj.getMonth() + 1).toString();
+      let day = dateObj.getDate().toString();
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2,'0')}`;
+    },
     safeHTML: function(context){
       return stripJs(context);
   }
@@ -74,6 +80,7 @@ app.use(function(req,res,next){
   app.locals.viewingCategory = req.query.category;
   next();
 });
+app.use(express.urlencoded({extended: true}));
 
 
 
@@ -90,21 +97,39 @@ app.get("/about", function(req,res){
 });
 
 app.get("/posts/add", function(req,res){
-  //res.sendFile(path.join(__dirname,"/views/addPost.html"));
-  res.render('addPost',{
+  blogservice.getCategories().then((data)=>{
+    res.render("addPost", {categories: data});
+  }).catch((err)=>{
+    res.render("addPost", {categories: []}); 
+  })
+});
+
+app.get("/categories/add", function(req,res){
+  res.render('addCategory',{
     layout: 'main'
   });
 });
 
-// app.get("/blog", function(req,res){
-//   blogservice.getPublishedPosts().then((blogservice) => {
-//     res.json(blogservice);
-//   })
-//   .catch((err)=>{
-//     console.log(err);
-//   });
-// });
+app.get('/categories/delete/:id', (req, res) => {
+  blogservice.deleteCategoryById(req.params.id).then((data) => {
+      res.redirect("/categories")
 
+  }).catch((error) => {
+      console.log(error)
+      res.status(500).send("Unable to Remove Category / Category not found!")
+  })    
+})
+
+app.get('/posts/delete/:id', (req, res) => {
+
+  blogservice.deletePostById(req.params.id).then((data) => {
+      res.redirect("/posts")
+
+  }).catch((error) => {
+      console.log(error)
+      res.status(500).send("Unable to Remove Post / Post not found!")
+  })    
+})
 app.get('/blog', async (req, res) => {
 
   // Declare an object to store properties for the view
@@ -157,14 +182,22 @@ app.get('/blog', async (req, res) => {
 app.get("/posts", (req,res)=>{
   if(req.query.category){
       blogservice.getPostsByCategory(req.query.category).then((data) => {
-        res.render("posts", {posts: data});
+        if(data.length >0){
+          res.render("posts", {posts: data});}
+        else{
+          res.render("posts",{ message: "no results" });
+        }
     }).catch((error) => {
         res.render("posts", {message: "no results"});
     })    
   }
   else if(req.query.minDate){
       blogservice.getPostsByMinDate(req.query.minDate).then((data) => {
-        res.render("posts", {posts: data});
+        if(data.length >0){
+          res.render("posts", {posts: data});}
+        else{
+          res.render("posts",{ message: "no results" });
+        }
     }).catch((error) => {
         res.render("posts", {message: "no results"});
     })
@@ -172,7 +205,11 @@ app.get("/posts", (req,res)=>{
   else{
     blogservice.getAllPosts().then((data) => {
       //res.json(blogservice);
-      res.render("posts", {posts: data})
+      if(data.length >0){
+        res.render("posts", {posts: data});}
+      else{
+        res.render("posts",{ message: "no results" });
+      }
     })
     .catch((err)=>{
       res.render("posts", {message: "no results"});
@@ -193,11 +230,14 @@ app.get('/posts/:id', (req, res) => {
 
 app.get("/categories", function(req,res){
   blogservice.getCategories().then((data) => {
-    //res.json(blogservice);
-    res.render("categories", {categories: data});
+    if(data.length >0){
+      res.render("categories", {categories: data});}
+    else{
+      res.render("categories", {message: "no results"});
+    }
   })
   .catch((err)=>{
-    //console.log(err);
+    
     res.render("categories", {message: "no results"});
   });
 });
@@ -220,6 +260,7 @@ let streamUpload = (req) => {
   });
 };
 
+
 async function upload(req) {
   let result = await streamUpload(req);
   console.log(result);
@@ -231,18 +272,21 @@ upload(req).then((uploaded)=>{
 
   blogservice.addPost(req.body).then((data) => {
     res.redirect('/posts')
-}).catch((error) => {
+  }).catch((error) => {
     res.status(500).send(error)
-})
-
-
-  //res.send(JSON.stringify(req.body))
-  // TODO: Process the req.body and add it as a new Blog Post before redirecting to /posts
+  })
 
 });
 
 })
 
+app.post('/categories/add',(req,res)=>{
+    blogservice.addCategory(req.body).then(() => {
+      res.redirect('/categories')
+  }).catch((error) => {
+      res.status(500).send(error);
+  });
+})
 
 app.get('/blog/:id', async (req, res) => {
 
