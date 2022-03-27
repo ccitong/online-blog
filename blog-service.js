@@ -90,7 +90,8 @@ module.exports.addPost = function(postData){
         if (postData[i] == "") { postData[i] = null; }
       }
       var today = new Date();
-      postData.postDate = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+      //postData.postDate = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+      postData.postDate = today;
       Post.create(postData).then(() => {
           console.log("POST CREATED")
           resolve()
@@ -156,7 +157,7 @@ module.exports.getPostsByCategory = (category)=>{
 
 
 };
-
+//{{#formatDate data.post.postDate}}{{/formatDate}}
 //add function of getPostByminDate
 module.exports.getPostsByMinDate = (minDatestr)=>{
   return new Promise((resolve, reject) => {
@@ -184,7 +185,7 @@ module.exports.getPostById = (id)=>{
     Post.findAll({
       where:{id: id}
     }).then((data) => {
-      resolve(data)
+      resolve(data[0])
   })
   .catch((error) => {
       console.log(error)
