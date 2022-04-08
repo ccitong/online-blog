@@ -3,7 +3,7 @@
 *  I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  No part *  of this assignment has been copied manually or electronically from any other source 
 *  (including 3rd party web sites) or distributed to other students.
 * 
-*  Name: __Sitong Wang____________________ Student ID: _138148200 Date: __26th March 2022______________
+*  Name: __Sitong Wang____________________ Student ID: _138148200 Date: __8th April 2022______________
 *
 *  Online (Heroku) URL: https://peaceful-everglades-38937.herokuapp.com/
                         
@@ -18,6 +18,8 @@ var express = require("express");
 var app = express();
 var path = require("path");
 var blogservice = require("./blog-service.js");
+var authData = require("./auth-service");
+const clientSessions = require("client-sessions");
 const multer = require("multer");
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
@@ -72,6 +74,25 @@ function onHttpStart() {
   console.log("Express http server listening on: " + HTTP_PORT);
 }
 
+app.use(clientSessions({
+  cookieName: "session",
+  secret: "web322_assighment6islongenough",
+  duration: 2 * 60 * 1000,
+  activeDuration: 1000 * 60
+}))
+
+app.use(function(req, res, next) {
+  res.locals.session = req.session;
+  next();
+});
+
+function ensureLogin(req, res, next) {
+  if (!req.session.user) {
+    res.redirect("/login");
+  } else {
+    next();
+  }
+}
 
 app.use(express.static("public"));
 app.use(function(req,res,next){
@@ -96,7 +117,7 @@ app.get("/about", function(req,res){
   });
 });
 
-app.get("/posts/add", function(req,res){
+app.get("/posts/add", ensureLogin,function(req,res){
   blogservice.getCategories().then((data)=>{
     res.render("addPost", {categories: data});
   }).catch((err)=>{
@@ -104,13 +125,13 @@ app.get("/posts/add", function(req,res){
   })
 });
 
-app.get("/categories/add", function(req,res){
+app.get("/categories/add", ensureLogin,function(req,res){
   res.render('addCategory',{
     layout: 'main'
   });
 });
 
-app.get('/categories/delete/:id', (req, res) => {
+app.get('/categories/delete/:id',ensureLogin, (req, res) => {
   blogservice.deleteCategoryById(req.params.id).then((data) => {
       res.redirect("/categories")
 
@@ -120,7 +141,7 @@ app.get('/categories/delete/:id', (req, res) => {
   })    
 })
 
-app.get('/posts/delete/:id', (req, res) => {
+app.get('/posts/delete/:id',ensureLogin, (req, res) => {
 
   blogservice.deletePostById(req.params.id).then((data) => {
       res.redirect("/posts")
@@ -179,7 +200,7 @@ app.get('/blog', async (req, res) => {
 });
 
 
-app.get("/posts", (req,res)=>{
+app.get("/posts", ensureLogin,(req,res)=>{
   if(req.query.category){
       blogservice.getPostsByCategory(req.query.category).then((data) => {
         if(data.length >0){
@@ -219,7 +240,7 @@ app.get("/posts", (req,res)=>{
 
 
 
-app.get('/posts/:id', (req, res) => {
+app.get('/posts/:id', ensureLogin,(req, res) => {
   blogservice.getPostById(req.params.id).then((data) => {
       res.json({data});
   }).catch((error) => {
@@ -228,7 +249,7 @@ app.get('/posts/:id', (req, res) => {
   })    
 })
 
-app.get("/categories", function(req,res){
+app.get("/categories",ensureLogin, function(req,res){
   blogservice.getCategories().then((data) => {
     if(data.length >0){
       res.render("categories", {categories: data});}
@@ -242,7 +263,7 @@ app.get("/categories", function(req,res){
   });
 });
 
-app.post('/posts/add',upload.single('featureImage'),(req,res)=>{
+app.post('/posts/add',upload.single('featureImage'),ensureLogin,(req,res)=>{
 
 let streamUpload = (req) => {
   return new Promise((resolve, reject) => {
@@ -280,7 +301,7 @@ upload(req).then((uploaded)=>{
 
 })
 
-app.post('/categories/add',(req,res)=>{
+app.post('/categories/add',ensureLogin,(req,res)=>{
     blogservice.addCategory(req.body).then(() => {
       res.redirect('/categories')
   }).catch((error) => {
@@ -338,13 +359,79 @@ app.get('/blog/:id', async (req, res) => {
   res.render("blog", {data: viewData})
 });
 
+app.get('/login', (req, res) => {
+  res.render('login', {
+      layout: "main"
+  }) 
+})
+
+app.post('/login',(req, res) => {
+
+  // some mongoose CREATE function that takes in req.body and creates a new user document 
+  
+  req.body.userAgent = req.get('User-Agent');
+  // req.body now has username, password, AND userAgent
+
+  authData.checkUser(req.body).then((mongoData) => {
+
+      req.session.user = {
+          userName: mongoData.userName,
+          email: mongoData.email,
+          loginHistory: mongoData.loginHistory 
+      }
+      res.redirect("/posts")
+  }).catch((err) => {
+    res.render("login", {errorMessage:err, userName:req.body.userName} )
+  })
+  
+
+})
+
+app.get('/register', (req, res) => {
+  res.render('register', {
+      layout: "main"
+  }) 
+})
+
+app.post('/register',(req, res) => {
+
+  // some mongoose CREATE function that takes in req.body and creates a new user document 
+  authData.registerUser(req.body).then((data) => {
+      console.log(data)
+      res.render('register', {
+          layout: "main",
+          successMessage: "USER CREATED"
+      })
+  }).catch((error) => {
+      console.log(error)
+      res.render('register', {
+          layout: "main",
+          errorMessage: error,
+          userName: req.body.userName
+      })
+  })
+})
+
+app.get("/logout", (req,res) => {
+  req.session.reset();
+  res.redirect("/");
+});
+
+app.get("/userHistory", ensureLogin, (req,res) => {
+  res.render("userHistory",{
+    layout: "main"
+  }) 
+});
+
 // optional 404 page
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname,"/public/css/000-404.png"));
 });
 
 // setup http server to listen on HTTP_PORT
-blogservice.initialize().then(()=>{
+blogservice.initialize()
+.then(authData.initialize)
+.then(()=>{
   app.listen(HTTP_PORT, onHttpStart);
 }).catch(err=>{
   console.log(err);
